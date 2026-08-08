@@ -1,22 +1,192 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Configure Your Event Ticket</title><meta name="description" content="Configure event details, branding, ticket tiers, preview and approve your ticket design."><meta property="og:image" content="images/config-og.jpg"><link rel="stylesheet" href="styles.css"><script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script><script src="site-config.js"></script><script src="shared.js"></script></head><body>
-<header><div class="eyebrow">Client Configuration Portal</div><h1>Configure Your Event Ticket</h1><p>Complete the event form, add your branding, review a real ticket preview, and approve the final design.</p></header><main>
-<div id="bad" class="card hidden"><h2>Configuration link unavailable</h2><div id="badMsg" class="error"></div></div>
-<div id="app" class="hidden">
-<div class="card"><div class="section-title"><div><h2 id="eventHeading">Event Configuration</h2><div id="status"></div></div><span class="pill" id="eventIdPill"></span></div><p>This private link is limited to this event. It does not provide access to vouchers, guest records, payments, gate tools, or other events.</p></div>
-<div class="card"><h2>1. Event Information & Ticket Tiers</h2><p>Use the Google Form below. The Event ID and security key are already filled in for you. You may create up to 12 tiers in the form; leave unused tier sections blank. Tier colors are optional. If you leave a color blank, the ticketing system assigns a coordinated default automatically.</p><iframe id="formFrame" class="config-form" title="Event configuration form"></iframe><div class="toolbar"><a id="openForm" class="btn secondary" target="_blank">Open Form in New Window</a></div></div>
-<div class="card"><h2>2. Branding</h2><p>Upload your organization/event logo and an optional background image. The logo is also used as a large faint ticket watermark. The QR safe zone remains solid white for reliable scanning.</p><div class="row"><div><label>Logo (PNG/JPG/WebP, max 3 MB)</label><input id="logo" type="file" accept="image/png,image/jpeg,image/webp"><button id="uploadLogo" type="button" style="margin-top:8px">Upload / Replace Logo</button></div><div><label>Background image (optional)</label><input id="background" type="file" accept="image/png,image/jpeg,image/webp"><button id="uploadBg" type="button" style="margin-top:8px">Upload / Replace Background</button></div></div><div id="assetMsg"></div><div class="small" id="assetState"></div></div>
-<div class="card"><h2>3. Ticket Preview</h2><p>After submitting the Google Form, tap <strong>Load Ticket Preview</strong>. This uses the same ticket renderer as real vouchers. The preview QR and serial are samples and cannot be used for admission.</p><div class="toolbar"><button id="previewBtn" type="button">Load Ticket Preview</button><button id="refreshSubmission" class="secondary" type="button">Refresh Submission Status</button><select id="previewTier" style="max-width:320px"></select></div><div id="previewMsg"></div><div class="ticket-wrap"><canvas id="previewCanvas" class="hidden"></canvas></div></div>
-<div class="card"><h2>4. Review & Approval</h2><p>If you want changes, edit and resubmit the Google Form above, then reload the preview. Approve only when the event information, pricing, colors, logo, and layout are correct.</p><div class="toolbar"><button id="reloadPreview" class="secondary" type="button">Make Changes / Reload Preview</button><button id="approve" class="gold" type="button">Approve Ticket Design</button></div><div id="approvalMsg"></div></div>
-<div class="card"><h2>Need Help?</h2><p id="helpText">Contact the event ticketing administrator using the communication method provided with your configuration invitation.</p></div>
-</div></main><footer>Private client configuration portal · Event Ticketing Platform V6</footer>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Configure Your Event Ticket</title>
+<meta name="description" content="Configure event details, branding, ticket tiers, preview and approve your ticket design.">
+<meta property="og:image" content="images/config-og.jpg">
+<link rel="stylesheet" href="styles.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<script src="site-config.js"></script>
+<script src="shared.js"></script>
+<style>
+.upper{text-transform:uppercase}.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}.locked{background:#f1efe8}.inline-check{display:flex;gap:10px;align-items:center}.inline-check input{width:auto;min-height:auto}.required::after{content:' *';color:#9B2226}.tier-card .remove-tier{background:#fff;color:#8f1d24;border:1px solid #d8a0a3;padding:9px 12px}.preview-price{font-weight:700}.guide-grid{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(280px,.9fr);gap:22px;align-items:start}.guide-map{display:grid;grid-template-columns:1fr 1fr;gap:10px}.guide-item{border:1px solid #d9d2c0;border-radius:12px;padding:11px 12px;background:#fff}.guide-item strong{display:block;color:var(--green);margin-bottom:3px}.guide-item span{font-size:.9rem;color:#5e645f}.guide-toolbar{display:flex;gap:10px;flex-wrap:wrap;margin:12px 0}.guide-toolbar button{padding:10px 14px}.guide-canvas{width:100%;height:auto;border:1px solid #d9d2c0;border-radius:12px;background:#fff;box-shadow:0 8px 22px rgba(0,0,0,.08)}.guide-note{background:#f8f3df;border-left:4px solid var(--gold);padding:12px 14px;border-radius:10px;margin:12px 0}.guide-badge{display:inline-block;padding:4px 9px;border-radius:999px;background:#edf5ef;color:var(--green);font-weight:700;font-size:.82rem}@media(max-width:850px){.guide-grid{grid-template-columns:1fr}.guide-map{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <div class="eyebrow">Client Configuration Portal</div>
+  <h1>Configure Your Event Ticket</h1>
+  <p>Enter the event details directly, choose colors, build ticket tiers, preview the real ticket layout, and approve the final design.</p>
+</header>
+<main>
+  <div id="bad" class="card hidden"><h2>Configuration link unavailable</h2><div id="badMsg" class="error"></div></div>
+  <div id="app" class="hidden">
+    <div class="card">
+      <div class="tier-head"><div><h2 id="eventHeading">Event Configuration</h2><div id="status"></div></div><span class="pill mono" id="eventIdPill"></span></div>
+      <p>This private link is limited to this event. It does not provide access to vouchers, guest records, payments, gate tools, or other events.</p>
+    </div>
+
+    <div class="card" id="ticketGuideCard">
+      <div class="tier-head">
+        <div>
+          <div class="guide-badge">START HERE</div>
+          <h2 style="margin-top:8px">Ticket Layout Guide</h2>
+          <p style="margin-bottom:0">This sample shows where your information will appear on the final ticket. Use it to keep names and wording concise before completing the form.</p>
+        </div>
+        <button id="toggleGuide" type="button" class="secondary">Hide Guide</button>
+      </div>
+      <div id="ticketGuideBody">
+        <div class="guide-note"><strong>Tip:</strong> the character limits in the form are based on this ticket layout. Short, clear text produces the best result.</div>
+        <div class="guide-grid">
+          <div>
+            <canvas id="guideCanvas" class="guide-canvas"></canvas>
+            <div class="guide-toolbar">
+              <button type="button" id="guideFixed">Example: Fixed Price</button>
+              <button type="button" id="guideDonation" class="secondary">Example: BY DONATION</button>
+            </div>
+            <div class="help">This is a non-admission sample. The real preview later on this page uses your actual event information, logo, colors, tiers and pricing.</div>
+          </div>
+          <div class="guide-map">
+            <div class="guide-item"><strong>Logo</strong><span>Top-left identity mark and large faint watermark.</span></div>
+            <div class="guide-item"><strong>Organization</strong><span>Up to 40 characters. Displayed in UPPERCASE.</span></div>
+            <div class="guide-item"><strong>Chapter / Unit</strong><span>Up to 45 characters. Displayed prominently in UPPERCASE.</span></div>
+            <div class="guide-item"><strong>Event title</strong><span>Up to 65 characters. Main event headline.</span></div>
+            <div class="guide-item"><strong>Tagline</strong><span>Optional subtitle, up to 110 characters.</span></div>
+            <div class="guide-item"><strong>Date &amp; time</strong><span>Selected with pickers and formatted automatically for the ticket.</span></div>
+            <div class="guide-item"><strong>Venue &amp; address</strong><span>Venue up to 65 characters; address up to 110.</span></div>
+            <div class="guide-item"><strong>Dress code</strong><span>Optional, up to 45 characters, displayed in UPPERCASE.</span></div>
+            <div class="guide-item"><strong>Ticket tier</strong><span>Up to 35 characters, such as GRAND CHIEF PATRON.</span></div>
+            <div class="guide-item"><strong>Price</strong><span>Fixed numeric amount or the exact display BY DONATION.</span></div>
+            <div class="guide-item"><strong>Tier color</strong><span>Controls the admission stub and tier accent. Pick visually.</span></div>
+            <div class="guide-item"><strong>QR &amp; serial</strong><span>Generated automatically by the system. QR remains black on white for reliable scanning.</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <form id="configForm" novalidate>
+      <div class="card">
+        <h2>1. Event Information</h2>
+        <div class="section-note">Fields are limited to the size and format that fit the ticket. Required fields are marked with an asterisk.</div>
+        <div class="row">
+          <div class="field"><label class="required">Organization</label><input id="OrgName" class="upper" maxlength="40" required placeholder="SLPP NORTH AMERICA"><div class="help">Maximum 40 characters. Saved in UPPERCASE.</div></div>
+          <div class="field"><label class="required">Chapter / Unit</label><input id="ChapterName" class="upper" maxlength="45" required placeholder="NEW YORK CHAPTER"><div class="help">Maximum 45 characters. Saved in UPPERCASE.</div></div>
+        </div>
+        <div class="field"><label class="required">Event title</label><input id="EventTitle" maxlength="65" required placeholder="Executive Inauguration Celebration"><div class="help">Maximum 65 characters. Use the capitalization you want displayed.</div></div>
+        <div class="field"><label>Tagline / subtitle</label><input id="Tagline" maxlength="110" placeholder="Celebrating the Inauguration of the Executive"><div class="help">Optional. Maximum 110 characters.</div></div>
+        <div class="row">
+          <div class="field"><label class="required">Event date</label><input id="EventDate" type="date" required><div class="help">The ticket automatically displays it as “Saturday, September 5, 2026”.</div></div>
+          <div class="field"><label class="required">Event time</label><input id="EventTime" type="time" required><div class="help">The ticket automatically displays it in 12-hour format, such as “8:00 PM”.</div></div>
+        </div>
+        <div class="row">
+          <div class="field"><label class="required">Venue name</label><input id="VenueName" maxlength="65" required placeholder="Antun's"><div class="help">Maximum 65 characters.</div></div>
+          <div class="field"><label class="required">Venue address</label><input id="VenueAddress" maxlength="110" required placeholder="96-43 Springfield Blvd, Queens Village, NY 11429"><div class="help">Maximum 110 characters.</div></div>
+        </div>
+        <div class="row three">
+          <div class="field"><label>Contact phone</label><input id="ContactPhone" type="tel" inputmode="tel" maxlength="20" placeholder="(818) 272-6589"></div>
+          <div class="field"><label>Contact email</label><input id="ContactEmail" type="email" maxlength="100" placeholder="events@example.org"></div>
+          <div class="field"><label>Website URL</label><input id="WebsiteURL" type="url" maxlength="200" placeholder="https://example.org"></div>
+        </div>
+        <div class="row three">
+          <div class="field"><label>Dress code</label><input id="DressCode" class="upper" maxlength="45" placeholder="FORMAL / TRADITIONAL"><div class="help">Saved in UPPERCASE.</div></div>
+          <div class="field"><label class="required">Serial prefix</label><input id="SerialPrefix" class="upper mono" maxlength="8" pattern="[A-Za-z0-9-]{1,8}" required placeholder="NY-"><div class="help">1–8 characters. Letters, numbers and hyphen only.</div></div>
+          <div class="field"><label>Currency symbol</label><input id="CurrencySymbol" maxlength="3" value="$" placeholder="$"><div class="help">For example $, £, €.</div></div>
+        </div>
+        <div class="row three">
+          <div class="field"><label>Event capacity</label><input id="Capacity" type="number" min="0" max="1000000" step="1" inputmode="numeric" placeholder="200"><div class="help">Whole number. 0 means no finite limit.</div></div>
+          <div class="field"><label>Primary color</label><input id="PrimaryColor" type="color" value="#0B3D24"></div>
+          <div class="field"><label>Accent / gold color</label><input id="AccentColor" type="color" value="#C9A24B"></div>
+        </div>
+        <div class="field"><label>Ticket footer text</label><input id="FooterLegalText" maxlength="120" placeholder="Ticket must be presented for admission · No refunds or replacements"><div class="help">Maximum 120 characters.</div></div>
+      </div>
+
+      <div class="card">
+        <h2>2. Groups / Chapters</h2>
+        <div class="inline-check"><input id="UseGroups" type="checkbox" checked><label for="UseGroups" style="margin:0">Use a chapter/group selector when the guest claims a ticket</label></div>
+        <div id="groupFields" style="margin-top:18px">
+          <div class="row">
+            <div class="field"><label>Group label</label><input id="GroupLabel" maxlength="20" value="Chapter" placeholder="Chapter"><div class="help">Maximum 20 characters.</div></div>
+            <div class="field"><label>Group list source</label><select id="GroupMode"><option value="SLPP_NA">Use standard SLPP North America chapter list</option><option value="CUSTOM">Use my own custom list</option></select></div>
+          </div>
+          <div id="standardGroupBox" class="chapter-preview"></div>
+          <div id="customGroupBox" class="field hidden"><label>Custom groups / chapters</label><textarea id="GroupsList" maxlength="2000" placeholder="One group or chapter per line"></textarea><div class="help">One entry per line. Blank lines are ignored.</div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="tier-head"><div><h2>3. Ticket Tiers</h2><p style="margin:0">Add only the tiers used for this event. Each tier may use a fixed dollar amount or <strong>BY DONATION</strong>.</p></div><button id="addTier" type="button">+ Add Tier</button></div>
+        <div id="tiers"></div>
+        <div class="help">Maximum 12 tiers. Tier names are saved in UPPERCASE. A capacity of 0 means no separate tier limit.</div>
+      </div>
+
+      <div class="card">
+        <h2>4. Branding</h2>
+        <p>Upload the organization/event logo and an optional background image. The logo is also used as the large faint watermark. Images must be PNG, JPG, or WebP and no larger than 3 MB.</p>
+        <div class="row">
+          <div><label>Logo</label><input id="logo" type="file" accept="image/png,image/jpeg,image/webp"><button id="uploadLogo" type="button" style="margin-top:8px">Upload / Replace Logo</button></div>
+          <div><label>Background image (optional)</label><input id="background" type="file" accept="image/png,image/jpeg,image/webp"><button id="uploadBg" type="button" style="margin-top:8px">Upload / Replace Background</button></div>
+        </div>
+        <div id="assetMsg"></div><div class="small" id="assetState"></div>
+      </div>
+
+      <div class="card">
+        <h2>5. Save Configuration</h2>
+        <p>Save before previewing. Saving replaces the current event configuration for this Event ID and returns the event to <strong>Client Submitted</strong> if an approved design is changed.</p>
+        <div class="toolbar"><button id="saveBtn" type="submit">Save Event Configuration</button></div>
+        <div id="saveMsg"></div>
+      </div>
+    </form>
+
+    <div class="card">
+      <h2>6. Ticket Preview</h2>
+      <p>The preview uses the same ticket renderer as real tickets. The QR and serial are samples and cannot be used for admission.</p>
+      <div class="toolbar"><button id="previewBtn" type="button">Load Ticket Preview</button><select id="previewTier" style="max-width:360px"></select></div>
+      <div id="previewMsg"></div><div class="ticket-wrap"><canvas id="previewCanvas" class="hidden"></canvas></div>
+    </div>
+
+    <div class="card">
+      <h2>7. Review & Approval</h2>
+      <p>Review each tier, price, color, logo, venue, date, time, and all ticket text. Approve only when the ticket is ready for production.</p>
+      <div class="toolbar"><button id="approve" class="gold" type="button">Approve Ticket Design</button></div><div id="approvalMsg"></div>
+    </div>
+  </div>
+</main>
+<footer>Private client configuration portal · Event Ticketing Platform V6</footer>
 <script>
-const byId=id=>document.getElementById(id);const bad=byId('bad'),badMsg=byId('badMsg'),app=byId('app'),eventHeading=byId('eventHeading'),status=byId('status'),eventIdPill=byId('eventIdPill'),formFrame=byId('formFrame'),openForm=byId('openForm'),logo=byId('logo'),uploadLogo=byId('uploadLogo'),background=byId('background'),uploadBg=byId('uploadBg'),assetMsg=byId('assetMsg'),assetState=byId('assetState'),previewBtn=byId('previewBtn'),refreshSubmission=byId('refreshSubmission'),previewTier=byId('previewTier'),previewMsg=byId('previewMsg'),previewCanvas=byId('previewCanvas'),reloadPreview=byId('reloadPreview'),approve=byId('approve'),approvalMsg=byId('approvalMsg'),helpText=byId('helpText');
-const v5Ready=!!(window.V5&&typeof window.V5.qs==='function'&&typeof window.V5.get==='function');const eventId=v5Ready?V5.qs('event'):'';const key=v5Ready?V5.qs('key'):'';let ctx=null,previewData=null;function note(id,t,k='notice'){const e=document.getElementById(id);e.className=k;e.textContent=t}
-async function load(){try{const sc=window.EVENT_TICKETING_CONFIG||{};if(sc.SUPPORT_EMAIL||sc.SUPPORT_PHONE)helpText.innerHTML='Need assistance with this configuration?'+V5.contacts({email:sc.SUPPORT_EMAIL||'',phone:sc.SUPPORT_PHONE||'',message:'I need help with event configuration '+eventId+'.',subject:'Event configuration help'});if(!eventId||!key)throw new Error('This link is incomplete.');const d=await V5.get({action:'clientContext',event:eventId,key});if(!d.ok)throw new Error(d.error);ctx=d;app.classList.remove('hidden');eventIdPill.textContent=d.event.EventID;eventHeading.textContent=d.event.EventTitle||'Event Configuration';status.innerHTML=`<span class="pill">${V5.esc(d.status||'Draft')}</span>`;formFrame.src=d.formUrl;openForm.href=d.formUrl;assetState.textContent=`Logo: ${d.hasLogo?'uploaded':'not uploaded'} · Background: ${d.hasBackground?'uploaded':'not uploaded'}`;if(d.submitted){const when=d.submittedAt?' Submitted: '+d.submittedAt:'';note('previewMsg','Configuration received.'+when+' Load the preview to review it.','success')}else note('previewMsg','Waiting for a matching Google Form submission for this Event ID.','notice')}catch(e){bad.classList.remove('hidden');badMsg.textContent=e.message}}
-async function upload(file,type){if(!file){note('assetMsg','Choose an image first.','error');return}if(file.size>3*1024*1024){note('assetMsg','Image must be 3 MB or smaller.','error');return}note('assetMsg','Uploading…');const dataUrl=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(file)});const d=await V5.post({action:'clientUpload',eventId,configKey:key,assetType:type,dataUrl});note('assetMsg',d.ok?(type==='logo'?'Logo uploaded successfully.':'Background uploaded successfully.'):(d.error||'Upload failed.'),d.ok?'success':'error');if(d.ok)load()}
-uploadLogo.onclick=()=>upload(logo.files[0],'logo');uploadBg.onclick=()=>upload(background.files[0],'background');
-async function preview(){note('previewMsg','Loading the latest submitted configuration…');const d=await V5.post({action:'clientPreview',eventId,configKey:key});if(!d.ok){note('previewMsg',d.error,'error');return}previewData=d;V5.applyBrand(d.event);previewTier.innerHTML=Object.entries(d.tiers||{}).map(([k,t])=>`<option value="${V5.esc(k)}">${V5.esc(t.label)} — ${V5.money(t.price,d.event.CurrencySymbol||'$')}</option>`).join('');if(!previewTier.value){note('previewMsg','At least one ticket tier is required in the Google Form.','error');return}await draw();previewCanvas.classList.remove('hidden');note('previewMsg','Preview loaded. Switch tiers to review each tier color and price.','success')}
-async function draw(){if(!previewData||!previewTier.value)return;await V5.renderTicket(previewCanvas,previewData.event,previewData.tiers,previewTier.value,(previewData.event.SerialPrefix||'EV-')+'001','SAMPLE-PREVIEW-QR',true)}
-previewBtn.onclick=preview;refreshSubmission.onclick=async()=>{note('previewMsg','Checking Google Form submissions…');await load()};reloadPreview.onclick=preview;previewTier.onchange=draw;approve.onclick=async()=>{if(!previewData){note('approvalMsg','Load and review the ticket preview first.','error');return}if(!confirm('Approve this ticket design and configuration?'))return;const d=await V5.post({action:'clientApprove',eventId,configKey:key});note('approvalMsg',d.ok?'Ticket design approved. The event administrator can now activate the event and issue vouchers.':d.error,d.ok?'success':'error');if(d.ok){status.innerHTML='<span class="pill">Client Approved</span>';approve.disabled=true}}
-if(v5Ready){load();}else{bad.classList.remove('hidden');badMsg.textContent='The configuration portal could not load its shared application files. Confirm shared.js and site-config.js are in the event-ticketing-v6 folder, then refresh this page.';}
-</script></body></html>
+const $=id=>document.getElementById(id), eventId=V5.qs('event'), key=V5.qs('key');
+let ctx=null,previewData=null,tierSeq=0;
+const guideEvent={EventID:'SAMPLE',OrgName:'SLPP NORTH AMERICA',ChapterName:'NEW YORK CHAPTER',EventTitle:'Executive Inauguration Celebration',Tagline:'Celebrating the Inauguration of the Executive',EventDate:'Saturday, September 5, 2026',EventTime:'8:00 PM',VenueName:"Antun's",VenueAddress:'96-43 Springfield Blvd, Queens Village, NY 11429',ContactPhone:'(818) 272-6589',WebsiteURL:'https://example.org',DressCode:'FORMAL / TRADITIONAL',PrimaryColor:'#0B3D24',AccentColor:'#C9A24B',SerialPrefix:'NY-',CurrencySymbol:'$',FooterLegalText:'Ticket must be presented for admission'};
+const guideTiers={fixed:{label:'GRAND CHIEF PATRON',price:300,color:'#164B8C'},donation:{label:'GRAND CHIEF PATRON',price:0,priceLabel:'BY DONATION',color:'#8A1C2D'}};
+async function drawGuide(which='fixed'){try{await V5.renderTicket($('guideCanvas'),guideEvent,guideTiers,which,'NY-001','SAMPLE-GUIDE-QR',{preview:true});}catch(e){console.log('Guide render failed',e);}}
+$('guideFixed').onclick=()=>drawGuide('fixed');$('guideDonation').onclick=()=>drawGuide('donation');$('toggleGuide').onclick=()=>{const body=$('ticketGuideBody'),hidden=body.classList.toggle('hidden');$('toggleGuide').textContent=hidden?'Show Guide':'Hide Guide';};
+requestAnimationFrame(()=>drawGuide('fixed'));
+const fields=['OrgName','ChapterName','EventTitle','Tagline','EventDate','EventTime','VenueName','VenueAddress','ContactPhone','ContactEmail','WebsiteURL','DressCode','SerialPrefix','CurrencySymbol','Capacity','PrimaryColor','AccentColor','FooterLegalText','UseGroups','GroupLabel','GroupMode','GroupsList'];
+const standardFallback=['No Chapter','Arizona Chapter (AZC)','Atlanta GA Chapter (GAC)','Chicago Chapter (ILC)','Dallas Chapter (TXDC)','Delaware Valley Chapter (DVC)','DRC Chapter (DRC)','Florida Chapter (FLC)','Houston Chapter (TXHC)','Iowa Chapter (IAC)','Minnesota Chapter (MNC)','New England Chapter (NEC)','New Jersey Chapter (NJC)','New York Chapter (NYC)','North Dakota Chapter (NDC)','Northern California Chapter (CANC)','Ohio Chapter (OHC)','Seattle Washington Chapter (SWC)','Southern California Chapter (CASC)','Virginia Chapter (VAC)','Washington DC Chapter (WDC)'];
+function note(id,text,kind='notice'){const e=$(id);e.className=kind;e.textContent=text;}
+function toISODate(v){if(!v)return'';const d=new Date(v);if(isNaN(d))return/^\d{4}-\d{2}-\d{2}$/.test(v)?v:'';const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0');return `${y}-${m}-${day}`;}
+function to24(v){const s=String(v||'').trim();if(/^\d{2}:\d{2}$/.test(s))return s;const m=s.match(/^(\d{1,2}):(\d{2})\s*([AP]M)$/i);if(!m)return'';let h=Number(m[1]);if(m[3].toUpperCase()==='PM'&&h<12)h+=12;if(m[3].toUpperCase()==='AM'&&h===12)h=0;return String(h).padStart(2,'0')+':'+m[2];}
+function upper(id){const e=$(id);e.value=e.value.toUpperCase();}
+['OrgName','ChapterName','DressCode','SerialPrefix'].forEach(id=>$(id).addEventListener('input',()=>upper(id)));
+function tierMarkup(t={}){const id=++tierSeq,mode=t.priceLabel?'DONATION':'FIXED',color=t.color||V5.DEFAULT_TIER_COLORS[(id-1)%V5.DEFAULT_TIER_COLORS.length];return `<div class="tier-card" data-tier-row="${id}" style="--tier:${color}"><div class="tier-head"><h3>Ticket Tier ${id}</h3><button type="button" class="remove-tier">Remove</button></div><div class="tier-grid"><div><label>Tier name</label><input class="tier-name upper" maxlength="35" required value="${V5.esc(t.label||'')}" placeholder="GRAND CHIEF PATRON"><div class="help">Maximum 35 characters. Saved in UPPERCASE.</div></div><div><label>Price type</label><select class="tier-price-mode price-mode"><option value="FIXED" ${mode==='FIXED'?'selected':''}>Fixed amount</option><option value="DONATION" ${mode==='DONATION'?'selected':''}>BY DONATION</option></select></div><div class="fixed-price-wrap"><label>Price</label><input class="tier-price" type="number" min="0" max="1000000" step="0.01" inputmode="decimal" value="${mode==='FIXED'?(Number(t.price)||0):0}"></div><div><label>Tier color</label><input class="tier-color" type="color" value="${color}"></div></div><div class="row"><div><label>Tier capacity</label><input class="tier-capacity" type="number" min="0" max="1000000" step="1" inputmode="numeric" value="${Number(t.capacity)||0}"><div class="help">0 = no separate tier limit.</div></div><div><label>Ticket price display</label><input class="tier-price-display locked" readonly value="${mode==='DONATION'?'BY DONATION':V5.money(Number(t.price)||0,$('CurrencySymbol').value||'$')}"></div></div></div>`;}
+function bindTier(row){const mode=row.querySelector('.tier-price-mode'),price=row.querySelector('.tier-price'),wrap=row.querySelector('.fixed-price-wrap'),display=row.querySelector('.tier-price-display'),color=row.querySelector('.tier-color'),name=row.querySelector('.tier-name');const refresh=()=>{const donation=mode.value==='DONATION';wrap.classList.toggle('hidden',donation);price.disabled=donation;display.value=donation?'BY DONATION':V5.money(Number(price.value)||0,$('CurrencySymbol').value||'$');};mode.onchange=refresh;price.oninput=refresh;name.oninput=()=>name.value=name.value.toUpperCase();color.oninput=()=>row.style.setProperty('--tier',color.value);row.querySelector('.remove-tier').onclick=()=>{if(document.querySelectorAll('[data-tier-row]').length<=1){alert('At least one ticket tier is required.');return;}row.remove();};refresh();}
+function addTier(t={}){if(document.querySelectorAll('[data-tier-row]').length>=12){alert('Maximum 12 ticket tiers.');return;}const holder=document.createElement('div');holder.innerHTML=tierMarkup(t);const row=holder.firstElementChild;$('tiers').appendChild(row);bindTier(row);}
+$('addTier').onclick=()=>addTier();
+$('CurrencySymbol').oninput=()=>document.querySelectorAll('[data-tier-row]').forEach(r=>{const m=r.querySelector('.tier-price-mode'),d=r.querySelector('.tier-price-display'),p=r.querySelector('.tier-price');d.value=m.value==='DONATION'?'BY DONATION':V5.money(Number(p.value)||0,$('CurrencySymbol').value||'$');});
+function renderStandardGroups(){const a=(ctx&&ctx.standardGroups)||standardFallback;$('standardGroupBox').innerHTML='<strong>Included chapters:</strong>'+a.map(x=>`<div>${V5.esc(x)}</div>`).join('');}
+function groupUI(){const use=$('UseGroups').checked;$('groupFields').classList.toggle('hidden',!use);const custom=$('GroupMode').value==='CUSTOM';$('standardGroupBox').classList.toggle('hidden',custom);$('customGroupBox').classList.toggle('hidden',!custom);}
+$('UseGroups').onchange=groupUI;$('GroupMode').onchange=groupUI;
+function gatherTiers(){return [...document.querySelectorAll('[data-tier-row]')].map(r=>({label:r.querySelector('.tier-name').value.trim().toUpperCase(),priceMode:r.querySelector('.tier-price-mode').value,price:Number(r.querySelector('.tier-price').value)||0,capacity:Number(r.querySelector('.tier-capacity').value)||0,color:r.querySelector('.tier-color').value}));}
+function gatherConfig(){return {OrgName:$('OrgName').value.trim().toUpperCase(),ChapterName:$('ChapterName').value.trim().toUpperCase(),EventTitle:$('EventTitle').value.trim(),Tagline:$('Tagline').value.trim(),EventDate:$('EventDate').value,EventTime:$('EventTime').value,VenueName:$('VenueName').value.trim(),VenueAddress:$('VenueAddress').value.trim(),ContactPhone:$('ContactPhone').value.trim(),ContactEmail:$('ContactEmail').value.trim(),WebsiteURL:$('WebsiteURL').value.trim(),DressCode:$('DressCode').value.trim().toUpperCase(),PrimaryColor:$('PrimaryColor').value,AccentColor:$('AccentColor').value,SerialPrefix:$('SerialPrefix').value.trim().toUpperCase(),CurrencySymbol:$('CurrencySymbol').value.trim()||'$',FooterLegalText:$('FooterLegalText').value.trim(),Capacity:Number($('Capacity').value)||0,UseGroups:$('UseGroups').checked,GroupLabel:$('GroupLabel').value.trim()||'Chapter',GroupMode:$('GroupMode').value,GroupsList:$('GroupsList').value};}
+async function load(){try{if(!eventId||!key)throw new Error('This link is incomplete.');const d=await V5.get({action:'clientContext',event:eventId,key});if(!d.ok)throw new Error(d.error);ctx=d;V5.applyBrand(d.event);$('app').classList.remove('hidden');$('eventIdPill').textContent=d.event.EventID;$('eventHeading').textContent=d.event.EventTitle||'Event Configuration';$('status').innerHTML=`<span class="pill">${V5.esc(d.status||'Draft')}</span>`;const e=d.event||{};['OrgName','ChapterName','EventTitle','Tagline','VenueName','VenueAddress','ContactPhone','ContactEmail','WebsiteURL','DressCode','SerialPrefix','CurrencySymbol','Capacity','PrimaryColor','AccentColor','FooterLegalText','GroupLabel'].forEach(id=>{if(e[id]!==undefined&&e[id]!==null&&String(e[id])!=='')$(id).value=e[id];});$('EventDate').value=toISODate(e.EventDate);$('EventTime').value=to24(e.EventTime);$('UseGroups').checked=String(e.UseGroups).toLowerCase()!=='false';const standard=(d.groups||[]).length&&JSON.stringify(d.groups||[])===JSON.stringify(d.standardGroups||standardFallback);$('GroupMode').value=standard?'SLPP_NA':'CUSTOM';if(!standard)$('GroupsList').value=(d.groups||[]).join('\n');renderStandardGroups();groupUI();$('tiers').innerHTML='';tierSeq=0;const entries=Object.values(d.tiers||{});if(entries.length)entries.forEach(addTier);else addTier({label:'SINGLE',price:100,color:'#0B3D24'});$('assetState').textContent=`Logo: ${d.hasLogo?'uploaded':'not uploaded'} · Background: ${d.hasBackground?'uploaded':'not uploaded'}`;if(d.submitted)note('saveMsg','Saved configuration found. You may edit and save again, then preview.','success');}catch(err){$('bad').classList.remove('hidden');$('badMsg').textContent=err.message;}}
+$('configForm').onsubmit=async ev=>{ev.preventDefault();if(!$('configForm').reportValidity())return;const tiers=gatherTiers();if(!tiers.length){note('saveMsg','Add at least one ticket tier.','error');return;}note('saveMsg','Saving configuration…');const d=await V5.post({action:'clientSaveConfig',eventId,configKey:key,config:gatherConfig(),tiers,groups:$('GroupMode').value==='CUSTOM'?$('GroupsList').value.split(/\r?\n/).map(x=>x.trim()).filter(Boolean):[]});if(!d.ok){note('saveMsg',d.error||'Save failed.','error');return;}ctx={...ctx,...d};note('saveMsg','Configuration saved successfully. You can now load the ticket preview.','success');$('status').innerHTML='<span class="pill">Client Submitted</span>';};
+async function upload(file,type){if(!file){note('assetMsg','Choose an image first.','error');return;}if(file.size>3*1024*1024){note('assetMsg','Image must be 3 MB or smaller.','error');return;}note('assetMsg','Uploading…');const dataUrl=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(file);});const d=await V5.post({action:'clientUpload',eventId,configKey:key,assetType:type,dataUrl});note('assetMsg',d.ok?(type==='logo'?'Logo uploaded successfully.':'Background uploaded successfully.'):(d.error||'Upload failed.'),d.ok?'success':'error');if(d.ok)load();}
+$('uploadLogo').onclick=()=>upload($('logo').files[0],'logo');$('uploadBg').onclick=()=>upload($('background').files[0],'background');
+async function preview(){note('previewMsg','Loading ticket preview…');const d=await V5.post({action:'clientPreview',eventId,configKey:key});if(!d.ok){note('previewMsg',d.error,'error');return;}previewData=d;V5.applyBrand(d.event);$('previewTier').innerHTML=Object.entries(d.tiers||{}).map(([k,t])=>`<option value="${V5.esc(k)}">${V5.esc(t.label)} — ${V5.esc(V5.price(t,d.event.CurrencySymbol||'$'))}</option>`).join('');if(!$('previewTier').value){note('previewMsg','At least one ticket tier is required.','error');return;}await draw();$('previewCanvas').classList.remove('hidden');note('previewMsg','Preview loaded. Review every tier before approval.','success');$('status').innerHTML='<span class="pill">Preview Ready</span>';}
+async function draw(){if(!previewData||!$('previewTier').value)return;await V5.renderTicket($('previewCanvas'),previewData.event,previewData.tiers,$('previewTier').value,(previewData.event.SerialPrefix||'EV-')+'001','SAMPLE-PREVIEW-QR',{preview:true});}
+$('previewBtn').onclick=preview;$('previewTier').onchange=draw;
+$('approve').onclick=async()=>{if(!previewData){note('approvalMsg','Load and review the ticket preview first.','error');return;}if(!confirm('Approve this ticket design and configuration?'))return;const d=await V5.post({action:'clientApprove',eventId,configKey:key});note('approvalMsg',d.ok?'Ticket design approved. The event administrator can now run the readiness simulator and activate the event.':d.error,d.ok?'success':'error');if(d.ok){$('status').innerHTML='<span class="pill">Client Approved</span>';$('approve').disabled=true;}};
+load();
+</script>
+</body></html>
