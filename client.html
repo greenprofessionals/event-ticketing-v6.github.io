@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Client Portal | Event Ticketing Platform V6</title>
+<meta name="description" content="Private client dashboard for event tickets, attendance, revenue, reports, and event readiness.">
+<meta property="og:title" content="Client Event Dashboard">
+<meta property="og:description" content="Monitor your events, ticket activity, attendance, and reports securely.">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://greenprofessionals.github.io/event-ticketing-v6/images/client-og.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://greenprofessionals.github.io/event-ticketing-v6/images/client-og.jpg">
+<link rel="stylesheet" href="styles.css">
+<script src="site-config.js"></script>
+<script src="shared.js"></script>
+</head>
+<body>
+<header>
+  <div class="eyebrow">Event Ticketing Platform V6</div>
+  <h1>Client Portal</h1>
+  <p>Private event monitoring, attendance, revenue, reports, and readiness.</p>
+</header>
+<main>
+<section class="card" id="loginCard">
+  <h2>Client Access</h2>
+  <p>Use the client portal passcode issued by the platform administrator.</p>
+  <label>Passcode</label><input id="pass" type="password" autocomplete="current-password">
+  <button id="login" style="margin-top:12px">Open Client Portal</button>
+  <div id="loginMsg"></div>
+</section>
+
+<div id="app" class="hidden">
+<section class="card">
+  <div class="row">
+    <div><h2 id="welcome">Client Dashboard</h2><p id="roleLine" class="small"></p></div>
+    <div style="align-self:end"><button id="refresh" class="secondary">Refresh</button></div>
+  </div>
+  <div class="metrics" id="totals"></div>
+</section>
+
+<section class="card">
+  <h2>My Events</h2>
+  <div id="events"></div>
+</section>
+
+<section class="card">
+  <h2>Search My Data</h2>
+  <div class="row"><div><input id="searchQ" placeholder="Guest name, phone, email, serial, voucher, event..."></div><div style="align-self:end"><button id="searchBtn">Search</button></div></div>
+  <div id="searchOut"></div>
+</section>
+
+<section class="card">
+  <h2>Reports & Export</h2>
+  <div class="row">
+    <div><label>Client</label><select id="clientSelect"></select></div>
+    <div style="align-self:end" class="toolbar"><button id="csvBtn" class="secondary">Download CSV</button><button id="printBtn" class="secondary">Print / Save PDF</button></div>
+  </div>
+  <p class="small">Exports are restricted to the authenticated client's ClientID and assigned events.</p>
+  <div id="exportMsg"></div>
+</section>
+
+<section class="card">
+  <h2>Recent Activity</h2>
+  <div id="activity"></div>
+</section>
+</div>
+</main>
+<footer>Client data is isolated by ClientID and enforced by the backend.</footer>
+<script>
+let portalPass='',portalUser=null,dashboard=null;
+const $=id=>document.getElementById(id);
+function note(id,text,type='notice'){const el=$(id);el.className=type;el.textContent=text}
+async function api(action,extra={}){return V6.post({action,adminPasscode:portalPass,...extra})}
+function metric(label,value){return `<div class="metric"><span>${V6.esc(label)}</span><strong>${V6.esc(value)}</strong></div>`}
+function healthBadge(h){const cls=h.status==='READY'?'success':h.status==='BLOCKED'?'error':'notice';return `<span class="pill ${cls}">${V6.esc(h.status)}</span>`}
+function eventCard(e){const pct=e.counts.claims?Math.round((e.counts.checkedIn/e.counts.claims)*100):0;return `<div class="event-card">
+  <div class="row"><div><h3>${V6.esc(e.title||e.eventId)}</h3><div class="small">${V6.esc(e.date||'Date not set')} · ${V6.esc(e.status)}</div></div><div style="text-align:right">${healthBadge(e.health)}</div></div>
+  <div class="metrics">
+    ${metric('Tickets issued',e.counts.claims)}${metric('Checked in',e.counts.checkedIn)}${metric('Check-in progress',pct+'%')}${metric('Pending vouchers',e.counts.pendingVouchers)}${metric('Capacity',(e.counts.allocated||0)+' / '+(e.counts.capacity||'∞'))}${metric('Collected',V6.money(e.finance.amountPaid))}${metric('Outstanding',V6.money(e.finance.outstanding))}
+  </div>
+  <div>${Object.values(e.byTier||{}).map(t=>`<span class="tier-chip" style="background:${t.color};color:${V6.contrast(t.color)}">${V6.esc(t.label)}: ${t.issued} issued / ${t.checkedIn} in</span>`).join(' ')}</div>
+  <div class="toolbar"><a class="btn secondary" href="config.html?event=${encodeURIComponent(e.eventId)}" onclick="return false" title="Configuration links are issued privately by Admin">Configuration managed by secure link</a></div>
+  ${e.readOnly?'<div class="notice">Emergency read-only mode is enabled. Gate check-in remains available.</div>':''}
+  ${e.health.issues?.length?`<div class="error"><strong>Needs attention:</strong> ${e.health.issues.map(V6.esc).join(' · ')}</div>`:''}
+  ${e.health.warnings?.length?`<div class="notice">${e.health.warnings.map(V6.esc).join(' · ')}</div>`:''}
+</div>`}
+async function load(){const d=await api('clientDashboard');if(!d.ok){note('loginMsg',d.error,'error');return}dashboard=d;portalUser=d.user;loginCard.classList.add('hidden');app.classList.remove('hidden');welcome.textContent=(d.clients[0]?.clientName||'Client')+' Dashboard';roleLine.textContent=`${d.user.name} · ${d.user.role}`;totals.innerHTML=metric('Tickets issued',d.totals.issued)+metric('Checked in',d.totals.checkedIn)+metric('Pending vouchers',d.totals.pendingVouchers)+metric('Collected',V6.money(d.totals.collected))+metric('Outstanding',V6.money(d.totals.outstanding));events.innerHTML=d.events.length?d.events.map(eventCard).join(''):'<div class="notice">No events are assigned to this client account.</div>';clientSelect.innerHTML=d.clients.map(c=>`<option value="${V6.esc(c.clientId)}">${V6.esc(c.clientName)} (${V6.esc(c.clientId)})</option>`).join('');await loadActivity()}
+async function loadActivity(){const id=clientSelect.value||dashboard?.clients?.[0]?.clientId;if(!id)return;const d=await api('clientRecent',{clientId:id});activity.innerHTML=d.ok&&d.rows.length?d.rows.map(r=>`<div class="event-card"><strong>${V6.esc(r.action)}</strong> · ${V6.esc(r.eventId)}<br><span class="small">${new Date(r.timestamp).toLocaleString()} · ${V6.esc(r.actor)} · ${V6.esc(r.role)}</span></div>`).join(''):'<div class="notice">No recent activity.</div>'}
+login.onclick=async()=>{portalPass=pass.value.trim();if(!portalPass)return note('loginMsg','Enter your passcode.','error');try{const v=await api('verifyPasscode');if(!v.ok)return note('loginMsg',v.error,'error');if(!['CLIENT_ADMIN','CLIENT_VIEWER','CLIENT_FINANCE','SYSTEM_OWNER'].includes(v.user.role))return note('loginMsg','This account is not authorized for the Client Portal.','error');await load()}catch(e){note('loginMsg',e.message,'error')}};
+refresh.onclick=load;
+clientSelect.onchange=loadActivity;
+searchBtn.onclick=async()=>{const d=await api('globalSearch',{query:searchQ.value.trim()});searchOut.innerHTML=d.ok&&d.results.length?d.results.map(r=>`<div class="event-card"><strong>${V6.esc(r.type)}</strong> · ${V6.esc(r.label)}<br><span class="small">${V6.esc(r.eventId)} · ${V6.esc(r.detail)}</span></div>`).join(''):'<div class="notice">No matching records.</div>'};
+csvBtn.onclick=async()=>{const d=await api('clientExportCsv',{clientId:clientSelect.value});if(!d.ok)return note('exportMsg',d.error,'error');const blob=new Blob([d.csv],{type:'text/csv;charset=utf-8'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=d.fileName||'client-export.csv';a.click();URL.revokeObjectURL(a.href);note('exportMsg','CSV export created.','success')};
+printBtn.onclick=()=>window.print();
+</script>
+</body></html>
